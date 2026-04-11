@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Menu, Sprout } from "lucide-react";
+import { Menu, Sprout } from "lucide-react"; // Import Menu for the hamburger
 import "./globals.css";
 import Sidebar from "../components/Sidebar";
 
@@ -15,6 +15,8 @@ export default function RootLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  
+  // This state controls if the sidebar is visible on mobile
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -37,6 +39,11 @@ export default function RootLayout({
     return () => authListener.subscription.unsubscribe();
   }, [pathname, router]);
 
+  // If the user clicks a link, automatically close the mobile menu
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
   if (isLoading) {
     return (
       <html lang="en">
@@ -56,22 +63,29 @@ export default function RootLayout({
       <body className="antialiased font-sans bg-[#fdfbf7] min-h-screen text-stone-800 flex flex-col md:flex-row">
         {!isLoginPage && (
           <>
-            {/* MOBILE TOP BAR - Only shows on small/medium screens */}
-            <header className="md:hidden bg-white border-b border-[#f1e6d2] p-4 flex justify-between items-center sticky top-0 z-[80]">
+            {/* MOBILE TOP BAR - Only shows on phone/tablet */}
+            <header className="md:hidden bg-white border-b border-[#f1e6d2] p-4 flex justify-between items-center sticky top-0 z-[80] shadow-sm">
               <div className="flex items-center gap-2">
-                <Sprout className="text-[#7a967a]" size={24} />
-                <span className="font-bold text-[#637a63]">Sage & Sand</span>
+                <div className="bg-[#7a967a] p-1.5 rounded-lg text-white">
+                  <Sprout size={20} />
+                </div>
+                <span className="font-bold text-[#637a63] tracking-tight">Sage & Sand</span>
               </div>
+              
+              {/* THE HAMBURGER BUTTON */}
               <button 
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-2 bg-[#f4f7f4] rounded-lg text-[#7a967a]"
+                className="p-2 bg-[#f4f7f4] rounded-xl text-[#7a967a] hover:bg-[#7a967a] hover:text-white transition-colors"
               >
                 <Menu size={24} />
               </button>
             </header>
 
-            {/* SHARED SIDEBAR */}
-            <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
+            {/* THE SIDEBAR - We pass the 'isMobileMenuOpen' state here */}
+            <Sidebar 
+              isOpen={isMobileMenuOpen} 
+              onClose={() => setIsMobileMenuOpen(false)} 
+            />
           </>
         )}
         

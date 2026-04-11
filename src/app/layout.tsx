@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     };
     protectRoute();
 
-    // Reset scroll to top on every page change
+    // Force scroll to top on page change to fix the "mid-section load" bug
     window.scrollTo(0, 0);
   }, [pathname, router]);
 
@@ -48,32 +48,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const isLoginPage = pathname === '/login';
 
   return (
-    <html lang="en" className="h-full">
-      <body className="antialiased font-sans bg-[#fdfbf7] text-stone-800 h-full overflow-hidden">
-        <div className="flex flex-col md:flex-row h-full">
+    <html lang="en">
+      <body className="antialiased font-sans bg-[#fdfbf7] text-stone-800 min-h-screen">
+        <div className="flex flex-col md:flex-row min-h-screen">
           {!isLoginPage && (
             <>
-              <header className="md:hidden bg-white border-b border-[#f1e6d2] p-4 flex justify-between items-center z-[80] shrink-0">
+              {/* MOBILE TOP BAR - Fixed to prevent invisible space */}
+              <header className="md:hidden bg-white/80 backdrop-blur-md border-b border-[#f1e6d2] p-4 flex justify-between items-center sticky top-0 z-[80] shrink-0">
                 <div className="flex items-center gap-2">
-                  <div className="bg-[#7a967a] p-1.5 rounded-lg text-white">
+                  <div className="bg-[#7a967a] p-1 rounded-lg text-white">
                     <Sprout size={18} />
                   </div>
-                  <span className="font-bold text-[#637a63]">Sage & Sand</span>
+                  <span className="font-bold text-[#637a63] text-sm">Sage & Sand</span>
                 </div>
                 <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 bg-[#f4f7f4] rounded-xl text-[#7a967a]">
-                  <Menu size={24} />
+                  <Menu size={22} />
                 </button>
               </header>
+
               <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
             </>
           )}
           
-          {/* 
-            This main container is the key to the scroll fix. 
-            'flex-1' allows it to take up the rest of the height 
-            below the mobile header. 
-          */}
-          <main className={`flex-1 overflow-y-auto scroll-touch ${isLoginPage ? 'w-full' : ''}`}>
+          <main className={`flex-1 ${isLoginPage ? 'w-full' : 'w-full md:max-w-[calc(100%-16rem)]'}`}>
             {children}
           </main>
         </div>

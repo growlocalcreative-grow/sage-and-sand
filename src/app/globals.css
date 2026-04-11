@@ -5,26 +5,23 @@
   --foreground: #637a63;
 }
 
-/* 
-  The 'overscroll-behavior' prevents that annoying 
-  "bounce" that reveals white space at the top 
-*/
-html, body {
+/* Let the browser handle scrolling naturally */
+html {
+  background-color: var(--background);
+  scroll-behavior: smooth;
+}
+
+body {
   background-color: var(--background);
   color: var(--foreground);
   margin: 0;
   padding: 0;
-  width: 100%;
-  height: 100%;
-  overscroll-behavior-y: none; /* Stops the "invisible space" pull */
-}
-
-body {
+  min-h-screen: 100dvh; /* Dynamic height for mobile bars */
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Momentum scrolling for iOS */
-.scroll-touch {
-  -webkit-overflow-scrolling: touch;
+/* Standard scroll padding for when we jump between sections */
+main {
+  padding-bottom: env(safe-area-inset-bottom);
 }

@@ -9,7 +9,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-// We add 'isOpen' and 'onClose' so the Mobile Nav can control it
 export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean, onClose?: () => void }) {
   const pathname = usePathname();
   
@@ -18,37 +17,36 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean, onClose
     window.location.href = "/login";
   }
 
-  // Common classes for mobile vs desktop
-  const sidebarBase = "w-64 bg-white border-r border-[#f1e6d2] flex flex-col h-screen sticky top-0 transition-transform duration-300 z-[100]";
-  const mobileClasses = isOpen ? "translate-x-0 fixed" : "-translate-x-full fixed md:translate-x-0 md:sticky";
-
   return (
     <>
-      {/* Background Dimmer for Mobile */}
+      {/* Dimmer: Uses 'fixed' to cover the whole screen */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[90] md:hidden" 
+          className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-[90] md:hidden transition-opacity" 
           onClick={onClose}
         />
       )}
 
-      <aside className={`${sidebarBase} ${mobileClasses}`}>
-        {/* Brand Logo & Close Button */}
+      {/* Sidebar: Uses 'svh' to handle mobile heights perfectly */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-[100] w-72 bg-white border-r border-[#f1e6d2] 
+        transform transition-transform duration-300 ease-in-out flex flex-col
+        md:relative md:translate-x-0 h-[100svh]
+        ${isOpen ? "translate-x-0" : "-translate-x-full"}
+      `}>
         <div className="p-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-[#7a967a] p-2 rounded-lg text-white">
               <Sprout size={24} />
             </div>
-            <span className="font-bold text-xl text-[#637a63] tracking-tight text-nowrap">Sage & Sand</span>
+            <span className="font-bold text-xl text-[#637a63] tracking-tight">Sage & Sand</span>
           </div>
-          {/* Close button - only visible on mobile */}
-          <button onClick={onClose} className="md:hidden p-2 text-stone-400 hover:text-[#7a967a]">
-            <X size={24} />
+          <button onClick={onClose} className="md:hidden p-2 text-stone-400 hover:text-[#7a967a] active:scale-90 transition-transform">
+            <X size={28} />
           </button>
         </div>
 
-        {/* Navigation Links */}
-        <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto">
+        <nav className="flex-1 px-4 space-y-1.5 mt-4 overflow-y-auto scroll-touch">
           <NavLink href="/" icon={<LayoutDashboard size={20}/>} label="Dashboard" active={pathname === '/'} onClick={onClose} />
           <NavLink href="/inventory" icon={<Package size={20}/>} label="Inventory" active={pathname === '/inventory'} onClick={onClose} />
           <NavLink href="/planner" icon={<Clock size={20}/>} label="Production Planner" active={pathname === '/planner'} onClick={onClose} />
@@ -58,13 +56,12 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean, onClose
           <NavLink href="/settings" icon={<Settings size={20}/>} label="Settings" active={pathname === '/settings'} onClick={onClose} />
         </nav>
 
-        {/* FOOTER ACTIONS */}
-        <div className="p-4 border-t border-[#f1e6d2] space-y-2">
+        <div className="p-6 border-t border-[#f1e6d2]">
           <button 
             onClick={handleSignOut}
-            className="w-full flex items-center justify-center gap-2 p-3 text-stone-400 hover:text-rose-400 transition-colors text-xs font-bold uppercase tracking-widest"
+            className="w-full flex items-center justify-center gap-3 p-4 bg-stone-50 text-stone-400 hover:text-rose-500 rounded-2xl transition-all text-xs font-bold uppercase tracking-widest"
           >
-            <LogOut size={14} />
+            <LogOut size={16} />
             Sign Out
           </button>
         </div>
@@ -78,14 +75,14 @@ function NavLink({ href, icon, label, active, onClick }: any) {
     <Link 
       href={href} 
       onClick={onClick}
-      className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all group ${
+      className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all group ${
         active 
-        ? 'bg-[#f4f7f4] text-[#7a967a] shadow-sm' 
+        ? 'bg-[#f4f7f4] text-[#7a967a] shadow-sm font-bold' 
         : 'text-stone-500 hover:bg-[#fdfbf7] hover:text-[#7a967a]'
       }`}
     >
-      <span className="group-hover:scale-110 transition-transform">{icon}</span>
-      <span className="font-medium text-sm lg:text-base">{label}</span>
+      <span className="transition-transform group-active:scale-110">{icon}</span>
+      <span className="text-sm sm:text-base">{label}</span>
     </Link>
   );
 }

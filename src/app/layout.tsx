@@ -24,8 +24,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       setIsLoading(false);
     };
     protectRoute();
-
-    // Force scroll to top on page change to fix the "mid-section load" bug
+    
+    // Crucial: Scroll to top of the ACTUAL window on every page change
     window.scrollTo(0, 0);
   }, [pathname, router]);
 
@@ -49,28 +49,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en">
-      <body className="antialiased font-sans bg-[#fdfbf7] text-stone-800 min-h-screen">
+      <body className="antialiased font-sans bg-[#fdfbf7] text-stone-800">
         <div className="flex flex-col md:flex-row min-h-screen">
           {!isLoginPage && (
             <>
-              {/* MOBILE TOP BAR - Fixed to prevent invisible space */}
-              <header className="md:hidden bg-white/80 backdrop-blur-md border-b border-[#f1e6d2] p-4 flex justify-between items-center sticky top-0 z-[80] shrink-0">
+              {/* FIXED MOBILE HEADER - No longer sticky to prevent gaps */}
+              <header className="md:hidden bg-white/90 backdrop-blur-md border-b border-[#f1e6d2] p-4 flex justify-between items-center fixed top-0 left-0 right-0 z-[80]">
                 <div className="flex items-center gap-2">
-                  <div className="bg-[#7a967a] p-1 rounded-lg text-white">
+                  <div className="bg-[#7a967a] p-1.5 rounded-lg text-white">
                     <Sprout size={18} />
                   </div>
                   <span className="font-bold text-[#637a63] text-sm">Sage & Sand</span>
                 </div>
-                <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 bg-[#f4f7f4] rounded-xl text-[#7a967a]">
+                <button 
+                  onClick={() => setIsMobileMenuOpen(true)} 
+                  className="p-2 bg-[#f4f7f4] rounded-xl text-[#7a967a] active:scale-95 transition-transform"
+                >
                   <Menu size={22} />
                 </button>
               </header>
+
+              {/* Offset for fixed header on mobile */}
+              <div className="h-[65px] md:hidden" />
 
               <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
             </>
           )}
           
-          <main className={`flex-1 ${isLoginPage ? 'w-full' : 'w-full md:max-w-[calc(100%-16rem)]'}`}>
+          {/* 
+             REMOVED max-h-screen and overflow-y-auto. 
+             This allows the whole page to scroll naturally.
+          */}
+          <main className={`flex-1 ${isLoginPage ? 'w-full' : 'w-full'}`}>
             {children}
           </main>
         </div>

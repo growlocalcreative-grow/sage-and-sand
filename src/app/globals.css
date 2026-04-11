@@ -5,23 +5,29 @@
   --foreground: #637a63;
 }
 
-/* Let the browser handle scrolling naturally */
-html {
+/* 
+  Fixing the height logic: 
+  'svh' (Small Viewport Height) is the most reliable for mobile 
+*/
+html, body {
   background-color: var(--background);
-  scroll-behavior: smooth;
+  color: var(--foreground);
+  min-height: 100svh; 
+  margin: 0;
+  padding: 0;
+  /* This prevents the "ghost scroll" pull-down space */
+  overscroll-behavior-y: none; 
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  margin: 0;
-  padding: 0;
-  min-h-screen: 100dvh; /* Dynamic height for mobile bars */
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Ensures the app starts at the very top */
+  display: flex;
+  flex-direction: column;
 }
 
-/* Standard scroll padding for when we jump between sections */
+/* Helper to handle the "Home Bar" on modern iPhones */
 main {
   padding-bottom: env(safe-area-inset-bottom);
 }

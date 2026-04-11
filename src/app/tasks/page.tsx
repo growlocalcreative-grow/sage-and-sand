@@ -29,25 +29,27 @@ export default function TasksPage() {
     setLoading(false);
   }
 
-  async function addTask(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newTaskTitle.trim()) return;
+async function addTask(e: React.FormEvent) {
+  e.preventDefault();
+  if (!newTaskTitle.trim()) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert([{ 
-        title: newTaskTitle, 
-        owner: filter === 'all' ? 'me' : filter,
-        user_id: user?.id 
-      }])
-      .select(`*, markets ( name )`);
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert([{ 
+      title: newTaskTitle, 
+      // FIX: If the filter is 'all', the owner should be 'all'
+      owner: filter === 'all' ? 'all' : filter, 
+      user_id: user?.id 
+    }])
+    .select(`*, markets ( name )`);
 
-    if (!error && data) {
-      setTasks([data[0], ...tasks]);
-      setNewTaskTitle("");
-    }
+  if (!error && data) {
+    setTasks([data[0], ...tasks]);
+    setNewTaskTitle("");
   }
+}
 
   const filteredTasks = tasks.filter(task => {
     if (filter === 'all') return true;
@@ -180,7 +182,7 @@ function TaskItem({ task, onRefresh, setTasks, allTasks }: any) {
         </div>
       </div>
 
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 text-stone-300 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
         <button onClick={() => setIsEditing(true)} className="p-2 text-stone-300 hover:text-[#7a967a] transition-colors"><Edit3 size={18} /></button>
         <button onClick={handleDelete} className="p-2 text-stone-300 hover:text-rose-400 transition-colors"><Trash2 size={18} /></button>
       </div>

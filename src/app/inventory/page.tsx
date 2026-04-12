@@ -40,10 +40,11 @@ export default function InventoryPage() {
     const catType = activeTab === 'materials' ? 'material' : 'product';
 
     try {
+      // We fetch ALL material columns (*) so we have the 'unit' data available
       const [itemRes, catRes, matRes, recipeRes] = await Promise.all([
         supabase.from(table).select('*').order('name', { ascending: true }),
         supabase.from('categories').select('*').eq('type', catType),
-        supabase.from('materials').select('*'), 
+        supabase.from('materials').select('*'), // This is crucial for unit lookups
         supabase.from('product_recipes').select('*') 
       ]);
 
@@ -247,7 +248,7 @@ export default function InventoryPage() {
               <div><label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">{activeTab === 'materials' ? 'Unit Cost' : 'Price'}</label><input type="number" step="0.01" value={newItem.cost_or_price} onChange={(e) => setNewItem({...newItem, cost_or_price: parseFloat(e.target.value) || 0})} className="w-full p-3 sm:p-4 bg-stone-50 rounded-2xl border border-stone-100" /></div>
             </div>
 
-            {/* THE FIX: UNIT DROPDOWN FOR MATERIALS */}
+            {/* --- UNIT SELECTION (For Materials) --- */}
             {activeTab === 'materials' && (
               <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200">
                 <label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2 ml-1">Measured In (Unit)</label>
@@ -273,7 +274,7 @@ export default function InventoryPage() {
               {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
             </select>
 
-            {/* THE FIX: RECIPE SECTION FOR PRODUCTS */}
+            {/* --- RECIPE BUILDER (For Products) --- */}
             {activeTab === 'products' && (
                <div className="mt-8 p-4 sm:p-6 bg-[#fdfbf7] border border-[#f1e6d2] rounded-[1.5rem] sm:rounded-[2rem] space-y-4 shadow-inner">
                   <div className="flex items-center gap-2 text-[#7a967a]">
@@ -281,7 +282,7 @@ export default function InventoryPage() {
                     <h3 className="font-bold text-xs sm:text-sm uppercase tracking-wider">Product Recipe</h3>
                   </div>
                   {recipeRows.map((row, index) => {
-                    // Logic to find the unit for THIS specific ingredient
+                    // This is the Magic Lookup!
                     const mat = allMaterials.find(m => m.id === row.material_id);
                     return (
                       <div key={index} className="flex gap-2 items-end bg-white p-2 sm:p-3 rounded-xl border border-stone-100 shadow-sm animate-in fade-in">
@@ -299,7 +300,7 @@ export default function InventoryPage() {
                             {allMaterials.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                           </select>
                         </div>
-                        <div className="w-20">
+                        <div className="w-24">
                           <div className="flex items-center gap-1 border-b border-sand-200">
                             <input 
                               type="number" 
@@ -312,8 +313,8 @@ export default function InventoryPage() {
                               }} 
                               className="w-full bg-transparent p-1 text-[10px] sm:text-xs text-right outline-none font-mono" 
                             />
-                            {/* THIS LINE SHOWS THE UNIT DYNAMICALLY */}
-                            <span className="text-[9px] text-stone-400 font-bold uppercase">{mat?.unit || 'qty'}</span>
+                            {/* This pulls the unit from the Material object we found earlier */}
+                            <span className="text-[9px] text-stone-400 font-bold uppercase shrink-0">{mat?.unit || 'items'}</span>
                           </div>
                         </div>
                         <button type="button" onClick={() => setRecipeRows(recipeRows.filter((_, i) => i !== index))} className="text-rose-300 hover:text-rose-500 ml-1"><MinusCircle size={16}/></button>

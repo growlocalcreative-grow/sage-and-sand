@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
   Search, Plus, Tag, Layers, X, Camera, Barcode, 
-  Trash2, Loader2, Edit3, Save, Hammer, Utensils, MinusCircle, Ruler
+  Trash2, Loader2, Edit3, Save, Hammer, Utensils, 
+  MinusCircle, Ruler, Calculator, Check 
 } from 'lucide-react';
 
 export default function InventoryPage() {
@@ -30,6 +31,11 @@ export default function InventoryPage() {
 
   const [recipeRows, setRecipeRows] = useState<any[]>([]);
 
+  // 3. COST CALCULATOR STATE (The Helper)
+  const [showCostCalc, setShowCostCalc] = useState(false);
+  const [calcTotal, setCalcTotal] = useState<string>("");
+  const [calcQty, setCalcQty] = useState<string>("");
+
   useEffect(() => {
     fetchEverything();
   }, [activeTab]);
@@ -40,11 +46,10 @@ export default function InventoryPage() {
     const catType = activeTab === 'materials' ? 'material' : 'product';
 
     try {
-      // We fetch ALL material columns (*) so we have the 'unit' data available
       const [itemRes, catRes, matRes, recipeRes] = await Promise.all([
         supabase.from(table).select('*').order('name', { ascending: true }),
         supabase.from('categories').select('*').eq('type', catType),
-        supabase.from('materials').select('*'), // This is crucial for unit lookups
+        supabase.from('materials').select('*'), 
         supabase.from('product_recipes').select('*') 
       ]);
 
@@ -62,6 +67,19 @@ export default function InventoryPage() {
       setLoading(false);
     }
   }
+
+  // --- COST CALCULATOR LOGIC ---
+  const applyCalculatedCost = () => {
+    const total = parseFloat(calcTotal);
+    const qty = parseFloat(calcQty);
+    if (!isNaN(total) && !isNaN(qty) && qty !== 0) {
+      const perUnit = (total / qty).toFixed(2);
+      setNewItem({ ...newItem, cost_or_price: parseFloat(perUnit) });
+      setShowCostCalc(false);
+      setCalcTotal("");
+      setCalcQty("");
+    }
+  };
 
   // --- BATCH PRODUCTION LOGIC ---
   async function handleBatchProduce(product: any) {
@@ -176,6 +194,7 @@ export default function InventoryPage() {
     setIsDrawerOpen(false);
     setEditingId(null);
     setRecipeRows([]);
+    setShowCostCalc(false);
     setNewItem({ name: '', description: '', current_stock: 0, cost_or_price: 0, category: categories[0]?.name || '', unit: 'items' });
   };
 
@@ -213,7 +232,7 @@ export default function InventoryPage() {
               const profitData = activeTab === 'products' ? calculateProfitData(item) : null;
               return (
                 <tr key={item.id} className="hover:bg-[#fdfbf7] transition-colors group">
-                  <td className="p-4"><p className="font-bold text-[#637a63] text-sm sm:text-base">{item.name}</p><span className="text-[9px] font-bold text-stone-300 uppercase tracking-widest">{item.category}</span></td>
+                  <td className="p-4"><p className="font-bold text-[#637a63] text-sm sm:text-base leading-tight">{item.name}</p><span className="text-[9px] font-bold text-stone-300 uppercase tracking-widest">{item.category}</span></td>
                   <td className="p-4 font-mono font-bold text-stone-600 text-sm">{item.current_stock} <span className="text-[10px] text-stone-300 font-normal lowercase">{activeTab === 'materials' ? item.unit : 'items'}</span></td>
                   <td className="p-4 text-right">
                     {activeTab === 'materials' ? (<p className="font-bold text-stone-600">${Number(item.unit_cost).toFixed(2)}</p>) : (
@@ -244,21 +263,54 @@ export default function InventoryPage() {
             <div><label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">Name</label><input required value={newItem.name} onChange={(e) => setNewItem({...newItem, name: e.target.value})} className="w-full p-3 sm:p-4 bg-stone-50 rounded-2xl border border-stone-100 outline-none focus:ring-2 focus:ring-[#7a967a]" /></div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div><label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">Stock Level</label><input type="number" value={newItem.current_stock} onChange={(e) => setNewItem({...newItem, current_stock: parseFloat(e.target.value) || 0})} className="w-full p-3 sm:p-4 bg-stone-50 rounded-2xl border border-stone-100" /></div>
-              <div><label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">{activeTab === 'materials' ? 'Unit Cost' : 'Price'}</label><input type="number" step="0.01" value={newItem.cost_or_price} onChange={(e) => setNewItem({...newItem, cost_or_price: parseFloat(e.target.value) || 0})} className="w-full p-3 sm:p-4 bg-stone-50 rounded-2xl border border-stone-100" /></div>
+              <div>
+                <label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">Stock Level</label>
+                <input type="number" value={newItem.current_stock} onChange={(e) => setNewItem({...newItem, current_stock: parseFloat(e.target.value) || 0})} className="w-full p-3 sm:p-4 bg-stone-50 rounded-2xl border border-stone-100" />
+              </div>
+              <div className="relative">
+                <div className="flex justify-between items-center mb-1">
+                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">{activeTab === 'materials' ? 'Unit Cost' : 'Price'}</label>
+                    {/* --- CALCULATOR TRIGGER BUTTON --- */}
+                    {activeTab === 'materials' && (
+                        <button type="button" onClick={() => setShowCostCalc(!showCostCalc)} className="text-[#7a967a] hover:text-[#637a63] flex items-center gap-1">
+                            <Calculator size={14} />
+                            <span className="text-[9px] font-bold uppercase">Calc</span>
+                        </button>
+                    )}
+                </div>
+                <input type="number" step="0.01" value={newItem.cost_or_price} onChange={(e) => setNewItem({...newItem, cost_or_price: parseFloat(e.target.value) || 0})} className="w-full p-3 sm:p-4 bg-stone-50 rounded-2xl border border-stone-100" />
+                
+                {/* --- THE INLINE CALCULATOR POPUP --- */}
+                {showCostCalc && (
+                  <div className="absolute top-full right-0 mt-2 w-full bg-white border border-[#f1e6d2] shadow-xl rounded-2xl p-4 z-20 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex justify-between items-center mb-3">
+                        <span className="text-[10px] font-black text-[#637a63] uppercase">Bulk to Unit Helper</span>
+                        <button type="button" onClick={() => setShowCostCalc(false)}><X size={14} className="text-stone-300" /></button>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                           <span className="text-stone-300">$</span>
+                           <input type="number" placeholder="Bulk Price" value={calcTotal} onChange={e => setCalcTotal(e.target.value)} className="w-full p-2 bg-stone-50 border rounded-lg text-xs" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <span className="text-stone-300">#</span>
+                           <input type="number" placeholder="Total Qty (oz/yd)" value={calcQty} onChange={e => setCalcQty(e.target.value)} className="w-full p-2 bg-stone-50 border rounded-lg text-xs" />
+                        </div>
+                        <button type="button" onClick={applyCalculatedCost} className="w-full bg-[#7a967a] text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+                            <Check size={14} /> Apply Calculation
+                        </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* --- UNIT SELECTION (For Materials) --- */}
             {activeTab === 'materials' && (
               <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200">
                 <label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2 ml-1">Measured In (Unit)</label>
                 <div className="flex items-center gap-3">
                   <Ruler size={18} className="text-[#c2b280]" />
-                  <select 
-                    value={newItem.unit} 
-                    onChange={(e) => setNewItem({...newItem, unit: e.target.value})}
-                    className="flex-1 bg-white p-2 rounded-lg border border-sand-200 font-bold text-[#637a63] outline-none text-sm"
-                  >
+                  <select value={newItem.unit} onChange={(e) => setNewItem({...newItem, unit: e.target.value})} className="flex-1 bg-white p-2 rounded-lg border border-sand-200 font-bold text-[#637a63] outline-none text-sm">
                     <option value="items">Items (count)</option>
                     <option value="oz">Ounces (oz)</option>
                     <option value="yards">Yards (yd)</option>
@@ -274,7 +326,6 @@ export default function InventoryPage() {
               {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
             </select>
 
-            {/* --- RECIPE BUILDER (For Products) --- */}
             {activeTab === 'products' && (
                <div className="mt-8 p-4 sm:p-6 bg-[#fdfbf7] border border-[#f1e6d2] rounded-[1.5rem] sm:rounded-[2rem] space-y-4 shadow-inner">
                   <div className="flex items-center gap-2 text-[#7a967a]">
@@ -282,38 +333,18 @@ export default function InventoryPage() {
                     <h3 className="font-bold text-xs sm:text-sm uppercase tracking-wider">Product Recipe</h3>
                   </div>
                   {recipeRows.map((row, index) => {
-                    // This is the Magic Lookup!
                     const mat = allMaterials.find(m => m.id === row.material_id);
                     return (
                       <div key={index} className="flex gap-2 items-end bg-white p-2 sm:p-3 rounded-xl border border-stone-100 shadow-sm animate-in fade-in">
                         <div className="flex-1">
-                          <select 
-                            value={row.material_id} 
-                            onChange={(e) => { 
-                              const newRows = [...recipeRows]; 
-                              newRows[index].material_id = e.target.value; 
-                              setRecipeRows(newRows); 
-                            }} 
-                            className="w-full p-1 bg-transparent border-none text-xs sm:text-sm font-bold text-stone-600 outline-none"
-                          >
+                          <select value={row.material_id} onChange={(e) => { const newRows = [...recipeRows]; newRows[index].material_id = e.target.value; setRecipeRows(newRows); }} className="w-full p-1 bg-transparent border-none text-xs sm:text-sm font-bold text-stone-600 outline-none">
                             <option value="">Select Ingredient...</option>
                             {allMaterials.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                           </select>
                         </div>
                         <div className="w-24">
                           <div className="flex items-center gap-1 border-b border-sand-200">
-                            <input 
-                              type="number" 
-                              step="any"
-                              value={row.quantity_used} 
-                              onChange={(e) => { 
-                                const newRows = [...recipeRows]; 
-                                newRows[index].quantity_used = parseFloat(e.target.value) || 0; 
-                                setRecipeRows(newRows); 
-                              }} 
-                              className="w-full bg-transparent p-1 text-[10px] sm:text-xs text-right outline-none font-mono" 
-                            />
-                            {/* This pulls the unit from the Material object we found earlier */}
+                            <input type="number" step="any" value={row.quantity_used} onChange={(e) => { const newRows = [...recipeRows]; newRows[index].quantity_used = parseFloat(e.target.value) || 0; setRecipeRows(newRows); }} className="w-full bg-transparent p-1 text-[10px] sm:text-xs text-right outline-none font-mono" />
                             <span className="text-[9px] text-stone-400 font-bold uppercase shrink-0">{mat?.unit || 'items'}</span>
                           </div>
                         </div>

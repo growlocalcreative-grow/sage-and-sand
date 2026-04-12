@@ -47,8 +47,18 @@ export default function MarketCalendar() {
       const newMarketId = marketData[0].id;
       const templateTasks = [
         { title: `Pack displays for ${newMarket.name}`, owner: 'me', market_id: newMarketId, user_id: user.id },
-        { title: `Charge Square reader`, owner: 'all', market_id: newMarketId, user_id: user.id },
-        { title: `Post socials for ${newMarket.name}`, owner: 'daughter', market_id: newMarketId, user_id: user.id }
+        { title: `Charge Tablet`, owner: 'all', market_id: newMarketId, user_id: user.id },
+        { title: `Post socials for ${newMarket.name}`, owner: 'daughter', market_id: newMarketId, user_id: user.id },
+	      { title: `Inventory Planning & Audit ${newMarket.name}`, owner: 'me', market_id: newMarketId, user_id: user.id },
+        { title: `Price Every Single Item`, owner: 'all', market_id: newMarketId, user_id: user.id },
+        { title: `Conduct a "Dry Run" Booth Setup ${newMarket.name}`, owner: 'daughter', market_id: newMarketId, user_id: user.id },
+	      { title: `Optimize Payment Systems ${newMarket.name}`, owner: 'daughter', market_id: newMarketId, user_id: user.id },
+	      { title: `Pack a "Booth Survival Kit" ${newMarket.name}`, owner: 'daughter', market_id: newMarketId, user_id: user.id },
+	      { title: `Design/Update Branding & Signage ${newMarket.name}`, owner: 'daughter', market_id: newMarketId, user_id: user.id },
+	      { title: `Prepare Your Packaging Experience ${newMarket.name}`, owner: 'daughter', market_id: newMarketId, user_id: user.id },
+	      { title: `Market Our Attendance ${newMarket.name}`, owner: 'daughter', market_id: newMarketId, user_id: user.id },
+	      { title: `Map Out the Logistics ${newMarket.name}`, owner: 'daughter', market_id: newMarketId, user_id: user.id },
+	      { title: `Plan Snacks and Drinks ${newMarket.name}`, owner: 'daughter', market_id: newMarketId, user_id: user.id }
       ];
       await supabase.from('tasks').insert(templateTasks);
       setMarkets([...markets, marketData[0]]);

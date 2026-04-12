@@ -33,13 +33,40 @@ export default function Home() {
   }
 
   async function updateStock(item: any, change: number) {
-    const newStock = Math.max(0, item.current_stock + change);
-    const { error } = await supabase.from('products').update({ current_stock: newStock }).eq('id', item.id);
-    if (!error) {
-      setQuickProducts(quickProducts.map(p => p.id === item.id ? { ...p, current_stock: newStock } : p));
-      setStats(prev => ({ ...prev, stock: prev.stock + change }));
+  const newStock = Math.max(0, item.current_stock + change);
+  setLoading(true);
+
+  // 1. If we are ADDING stock (+1), check for a recipe and subtract materials
+  if (change > 0) {
+    const { data: recipe } = await supabase
+      .from('product_recipes')
+      .select('material_id, quantity_used')
+      .eq('product_id', item.id);
+
+    if (recipe && recipe.length > 0) {
+      for (const ingredient of recipe) {
+        // Subtract from materials based on how many products were made
+        await supabase.rpc('decrement_material_stock', { 
+          row_id: ingredient.material_id, 
+          amount: ingredient.quantity_used * change 
+        });
+      }
     }
   }
+
+  // 2. Update the Product Stock in Supabase
+  const { error } = await supabase
+    .from('products')
+    .update({ current_stock: newStock })
+    .eq('id', item.id);
+
+  if (!error) {
+    // Refresh local stats
+    setQuickProducts(quickProducts.map(p => p.id === item.id ? { ...p, current_stock: newStock } : p));
+    setStats(prev => ({ ...prev, stock: prev.stock + change }));
+  }
+  setLoading(false);
+}
 
   if (loading) {
     return (

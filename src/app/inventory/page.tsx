@@ -191,36 +191,49 @@ export default function InventoryPage() {
           <thead className="bg-[#fdfbf7] border-b border-[#f1e6d2]">
             <tr>
               <th className="p-4 text-[10px] font-black text-stone-400 uppercase tracking-widest">Name</th>
-              <th className="p-4 text-[10px] font-black text-stone-400 uppercase tracking-widest">Category</th>
               <th className="p-4 text-[10px] font-black text-stone-400 uppercase tracking-widest">Stock</th>
+              <th className="p-4 text-[10px] font-black text-stone-400 uppercase tracking-widest text-right">
+                {activeTab === 'materials' ? 'Unit Cost' : 'Profit / Margin'}
+              </th>
               <th className="p-4 text-right text-[10px] font-black text-stone-400 uppercase tracking-widest">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-50">
-            {loading ? (
-              <tr><td colSpan={4} className="p-10 text-center animate-pulse text-stone-400 italic">Syncing Ledger...</td></tr>
-            ) : dataList.map((item) => (
-              <tr key={item.id} className="hover:bg-[#fdfbf7] transition-colors group">
-                <td className="p-4 font-bold text-[#637a63] text-sm sm:text-base">{item.name}</td>
-                <td className="p-4 text-[10px] sm:text-xs font-bold text-stone-400 uppercase">{item.category}</td>
-                <td className="p-4 font-mono font-bold text-stone-600 text-sm">
-                  {item.current_stock} <span className="text-[10px] text-stone-400 font-normal lowercase">{activeTab === 'materials' ? item.unit : 'items'}</span>
-                </td>
-                <td className="p-4 text-right space-x-1">
-                  {activeTab === 'products' && (
-                    <button onClick={() => handleBatchProduce(item)} className="p-2 text-[#7a967a] hover:bg-[#f4f7f4] rounded-lg transition-all"><Hammer size={16} /></button>
-                  )}
-                  <button onClick={() => openEditDrawer(item)} className="p-2 text-stone-300 hover:text-[#7a967a] transition-colors"><Edit3 size={16}/></button>
-                  <button onClick={async () => {
-                    if(confirm("Delete item?")) {
-                      await supabase.from(activeTab === 'materials' ? 'materials' : 'products').delete().eq('id', item.id);
-                      fetchEverything();
-                    }
-                  }} className="p-2 text-stone-300 hover:text-rose-400 transition-colors"><Trash2 size={16}/></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+  {dataList.map((item) => {
+    // Math logic for the row
+    const cost = activeTab === 'materials' ? item.unit_cost : item.sale_price;
+    
+    return (
+      <tr key={item.id} className="hover:bg-[#fdfbf7] transition-colors group">
+        <td className="p-4">
+          <p className="font-bold text-[#637a63] text-sm sm:text-base leading-tight">{item.name}</p>
+          <p className="text-[10px] font-bold text-stone-300 uppercase tracking-tighter">{item.category}</p>
+        </td>
+        <td className="p-4 font-mono font-bold text-stone-600 text-sm">
+          {item.current_stock} <span className="text-[9px] text-stone-400 font-normal">{activeTab === 'materials' ? item.unit : 'items'}</span>
+        </td>
+        <td className="p-4 text-right">
+          {activeTab === 'materials' ? (
+            <p className="font-bold text-stone-600">${item.unit_cost}</p>
+          ) : (
+            <div>
+              <p className="font-bold text-emerald-600">${item.sale_price}</p>
+              {/* We can expand this later to show real margin % */}
+              <span className="text-[9px] font-black text-emerald-400 uppercase">Gross Revenue</span>
+            </div>
+          )}
+        </td>
+        <td className="p-4 text-right space-x-1">
+          {activeTab === 'products' && (
+            <button onClick={() => handleBatchProduce(item)} className="p-2 text-[#7a967a] hover:bg-[#f4f7f4] rounded-lg transition-all"><Hammer size={16} /></button>
+          )}
+          <button onClick={() => openEditDrawer(item)} className="p-2 text-stone-300 hover:text-[#7a967a] transition-colors"><Edit3 size={16}/></button>
+          <button onClick={() => deleteItem(item.id)} className="p-2 text-stone-300 hover:text-rose-400 transition-colors"><Trash2 size={16}/></button>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
         </table>
       </div>
 

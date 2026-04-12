@@ -25,7 +25,7 @@ export default function InventoryPage() {
     current_stock: 0,
     cost_or_price: 0,
     category: '',
-    unit: 'items' // Restored
+    unit: 'items' 
   });
 
   const [recipeRows, setRecipeRows] = useState<any[]>([]);
@@ -62,21 +62,18 @@ export default function InventoryPage() {
     }
   }
 
-  // --- RESTORED: SMART BATCH PRODUCTION ---
+  // --- BATCH PRODUCTION LOGIC ---
   async function handleBatchProduce(product: any) {
     const amount = prompt(`How many "${product.name}" did you make?`, "1");
     if (!amount || isNaN(Number(amount))) return;
     const qtyMade = Number(amount);
 
     setLoading(true);
-    
-    // 1. Find recipe for this product
     const recipe = allRecipes.filter(r => r.product_id === product.id);
 
     if (recipe && recipe.length > 0) {
       for (const ingredient of recipe) {
         const totalToSubtract = Number(ingredient.quantity_used) * qtyMade;
-        // Call the Supabase function we created earlier
         await supabase.rpc('decrement_material_stock', { 
           row_id: ingredient.material_id, 
           amount: totalToSubtract 
@@ -84,18 +81,13 @@ export default function InventoryPage() {
       }
     }
 
-    // 2. Update Product Stock
-    await supabase
-      .from('products')
-      .update({ current_stock: product.current_stock + qtyMade })
-      .eq('id', product.id);
-
-    alert(`Success! Produced ${qtyMade} units. Material stock updated.`);
+    await supabase.from('products').update({ current_stock: product.current_stock + qtyMade }).eq('id', product.id);
+    alert(`Production logged! Material stock updated.`);
     fetchEverything();
     setLoading(false);
   }
 
-  // --- SAVING & UPDATING ---
+  // --- SAVE & UPDATE ---
   async function handleSaveItem(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -112,7 +104,7 @@ export default function InventoryPage() {
 
     if (activeTab === 'materials') {
       dbData.unit_cost = Number(newItem.cost_or_price) || 0;
-      dbData.unit = newItem.unit; // Restored
+      dbData.unit = newItem.unit; 
     } else {
       dbData.sale_price = Number(newItem.cost_or_price) || 0;
       dbData.description = newItem.description;
@@ -144,13 +136,13 @@ export default function InventoryPage() {
   }
 
   async function handleDeleteItem(id: string) {
-    if (!confirm("Remove this permanently from the cloud?")) return;
+    if (!confirm("Delete this item?")) return;
     const table = activeTab === 'materials' ? 'materials' : 'products';
-    const { error } = await supabase.from(table).delete().eq('id', id);
-    if (!error) fetchEverything();
+    await supabase.from(table).delete().eq('id', id);
+    fetchEverything();
   }
 
-  // Profit Calc Engine
+  // Profit Engine
   const calculateProfitData = (product: any) => {
     const ingredients = allRecipes.filter(r => r.product_id === product.id);
     const totalCost = ingredients.reduce((sum, recipe) => {
@@ -191,7 +183,7 @@ export default function InventoryPage() {
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#637a63]">Inventory Ledger</h1>
-          <p className="text-stone-400 text-xs sm:text-sm italic">Sage & Sand {activeTab}</p>
+          <p className="text-stone-400 text-xs sm:text-sm italic tracking-wide">Sage & Sand {activeTab}</p>
         </div>
         <button onClick={() => setIsDrawerOpen(true)} className="bg-[#f1e6d2] text-[#637a63] px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-[#e7d9c1] active:scale-95 transition-all text-sm">
           <Plus size={18} /> Add Item
@@ -215,32 +207,20 @@ export default function InventoryPage() {
           </thead>
           <tbody className="divide-y divide-stone-50">
             {loading ? (
-              <tr><td colSpan={4} className="p-10 text-center animate-pulse text-stone-300 italic">Syncing...</td></tr>
+              <tr><td colSpan={4} className="p-10 text-center animate-pulse text-stone-300 italic">Syncing Ledger...</td></tr>
             ) : dataList.map((item) => {
               const profitData = activeTab === 'products' ? calculateProfitData(item) : null;
               return (
                 <tr key={item.id} className="hover:bg-[#fdfbf7] transition-colors group">
-                  <td className="p-4">
-                    <p className="font-bold text-[#637a63] text-sm sm:text-base leading-tight">{item.name}</p>
-                    <span className="text-[9px] font-bold text-stone-300 uppercase tracking-widest">{item.category}</span>
-                  </td>
-                  <td className="p-4 font-mono font-bold text-stone-600 text-sm">
-                    {item.current_stock} <span className="text-[10px] text-stone-300 font-normal lowercase">{activeTab === 'materials' ? item.unit : 'items'}</span>
-                  </td>
+                  <td className="p-4"><p className="font-bold text-[#637a63] text-sm sm:text-base">{item.name}</p><span className="text-[9px] font-bold text-stone-300 uppercase tracking-widest">{item.category}</span></td>
+                  <td className="p-4 font-mono font-bold text-stone-600 text-sm">{item.current_stock} <span className="text-[10px] text-stone-300 font-normal lowercase">{activeTab === 'materials' ? item.unit : 'items'}</span></td>
                   <td className="p-4 text-right">
-                    {activeTab === 'materials' ? (
-                      <p className="font-bold text-stone-600">${Number(item.unit_cost).toFixed(2)}</p>
-                    ) : (
-                      <div className="flex flex-col items-end">
-                        <p className="font-bold text-emerald-600">${profitData?.profit}</p>
-                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-tighter">{profitData?.margin}% Margin</span>
-                      </div>
+                    {activeTab === 'materials' ? (<p className="font-bold text-stone-600">${Number(item.unit_cost).toFixed(2)}</p>) : (
+                      <div className="flex flex-col items-end"><p className="font-bold text-emerald-600">${profitData?.profit}</p><span className="text-[9px] font-black text-emerald-400 uppercase tracking-tighter">{profitData?.margin}% Margin</span></div>
                     )}
                   </td>
                   <td className="p-4 text-right space-x-1 whitespace-nowrap">
-                    {activeTab === 'products' && (
-                      <button onClick={() => handleBatchProduce(item)} className="p-2 text-[#7a967a] hover:bg-[#f4f7f4] rounded-lg transition-all"><Hammer size={18} /></button>
-                    )}
+                    {activeTab === 'products' && (<button onClick={() => handleBatchProduce(item)} className="p-2 text-[#7a967a] hover:bg-[#f4f7f4] rounded-lg transition-all"><Hammer size={18} /></button>)}
                     <button onClick={() => openEditDrawer(item)} className="p-2 text-stone-300 hover:text-[#7a967a]"><Edit3 size={18}/></button>
                     <button onClick={() => handleDeleteItem(item.id)} className="p-2 text-stone-300 hover:text-rose-400"><Trash2 size={18}/></button>
                   </td>
@@ -260,29 +240,24 @@ export default function InventoryPage() {
           </div>
 
           <div className="space-y-4 flex-1 overflow-y-auto pr-2">
-            <div>
-              <label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">Name</label>
-              <input required value={newItem.name} onChange={(e) => setNewItem({...newItem, name: e.target.value})} className="w-full p-3 sm:p-4 bg-stone-50 rounded-2xl border border-stone-100 outline-none focus:ring-2 focus:ring-[#7a967a]" />
-            </div>
+            <div><label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">Name</label><input required value={newItem.name} onChange={(e) => setNewItem({...newItem, name: e.target.value})} className="w-full p-3 sm:p-4 bg-stone-50 rounded-2xl border border-stone-100 outline-none focus:ring-2 focus:ring-[#7a967a]" /></div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">Stock Level</label>
-                <input type="number" value={newItem.current_stock} onChange={(e) => setNewItem({...newItem, current_stock: parseFloat(e.target.value) || 0})} className="w-full p-3 sm:p-4 bg-stone-50 rounded-2xl border border-stone-100" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">{activeTab === 'materials' ? 'Unit Cost' : 'Price'}</label>
-                <input type="number" step="0.01" value={newItem.cost_or_price} onChange={(e) => setNewItem({...newItem, cost_or_price: parseFloat(e.target.value) || 0})} className="w-full p-3 sm:p-4 bg-stone-50 rounded-2xl border border-stone-100" />
-              </div>
+              <div><label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">Stock Level</label><input type="number" value={newItem.current_stock} onChange={(e) => setNewItem({...newItem, current_stock: parseFloat(e.target.value) || 0})} className="w-full p-3 sm:p-4 bg-stone-50 rounded-2xl border border-stone-100" /></div>
+              <div><label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">{activeTab === 'materials' ? 'Unit Cost' : 'Price'}</label><input type="number" step="0.01" value={newItem.cost_or_price} onChange={(e) => setNewItem({...newItem, cost_or_price: parseFloat(e.target.value) || 0})} className="w-full p-3 sm:p-4 bg-stone-50 rounded-2xl border border-stone-100" /></div>
             </div>
 
-            {/* RESTORED: UNIT SELECTOR */}
+            {/* THE FIX: UNIT DROPDOWN FOR MATERIALS */}
             {activeTab === 'materials' && (
-              <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200 flex items-center gap-4">
-                <Ruler className="text-sand-500" size={20} />
-                <div className="flex-1">
-                  <label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Measured In</label>
-                  <select value={newItem.unit} onChange={(e) => setNewItem({...newItem, unit: e.target.value})} className="bg-transparent font-bold text-[#637a63] outline-none w-full text-sm">
+              <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200">
+                <label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2 ml-1">Measured In (Unit)</label>
+                <div className="flex items-center gap-3">
+                  <Ruler size={18} className="text-[#c2b280]" />
+                  <select 
+                    value={newItem.unit} 
+                    onChange={(e) => setNewItem({...newItem, unit: e.target.value})}
+                    className="flex-1 bg-white p-2 rounded-lg border border-sand-200 font-bold text-[#637a63] outline-none text-sm"
+                  >
                     <option value="items">Items (count)</option>
                     <option value="oz">Ounces (oz)</option>
                     <option value="yards">Yards (yd)</option>
@@ -298,7 +273,7 @@ export default function InventoryPage() {
               {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
             </select>
 
-            {/* RESTORED: RECIPE BUILDER */}
+            {/* THE FIX: RECIPE SECTION FOR PRODUCTS */}
             {activeTab === 'products' && (
                <div className="mt-8 p-4 sm:p-6 bg-[#fdfbf7] border border-[#f1e6d2] rounded-[1.5rem] sm:rounded-[2rem] space-y-4 shadow-inner">
                   <div className="flex items-center gap-2 text-[#7a967a]">
@@ -306,31 +281,51 @@ export default function InventoryPage() {
                     <h3 className="font-bold text-xs sm:text-sm uppercase tracking-wider">Product Recipe</h3>
                   </div>
                   {recipeRows.map((row, index) => {
+                    // Logic to find the unit for THIS specific ingredient
                     const mat = allMaterials.find(m => m.id === row.material_id);
                     return (
-                      <div key={index} className="flex gap-2 items-end bg-white p-2 sm:p-3 rounded-xl border border-stone-100 shadow-sm">
+                      <div key={index} className="flex gap-2 items-end bg-white p-2 sm:p-3 rounded-xl border border-stone-100 shadow-sm animate-in fade-in">
                         <div className="flex-1">
-                          <select value={row.material_id} onChange={(e) => { const newRows = [...recipeRows]; newRows[index].material_id = e.target.value; setRecipeRows(newRows); }} className="w-full p-1 bg-transparent border-none text-xs sm:text-sm font-bold text-stone-600 outline-none">
-                            <option value="">Select...</option>
+                          <select 
+                            value={row.material_id} 
+                            onChange={(e) => { 
+                              const newRows = [...recipeRows]; 
+                              newRows[index].material_id = e.target.value; 
+                              setRecipeRows(newRows); 
+                            }} 
+                            className="w-full p-1 bg-transparent border-none text-xs sm:text-sm font-bold text-stone-600 outline-none"
+                          >
+                            <option value="">Select Ingredient...</option>
                             {allMaterials.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                           </select>
                         </div>
                         <div className="w-20">
-                          <div className="flex items-center gap-1 border-b">
-                            <input type="number" value={row.quantity_used} onChange={(e) => { const newRows = [...recipeRows]; newRows[index].quantity_used = parseFloat(e.target.value) || 0; setRecipeRows(newRows); }} className="w-full bg-transparent p-1 text-[10px] sm:text-xs text-right outline-none" />
-                            <span className="text-[9px] text-stone-400 font-bold">{mat?.unit || 'qty'}</span>
+                          <div className="flex items-center gap-1 border-b border-sand-200">
+                            <input 
+                              type="number" 
+                              step="any"
+                              value={row.quantity_used} 
+                              onChange={(e) => { 
+                                const newRows = [...recipeRows]; 
+                                newRows[index].quantity_used = parseFloat(e.target.value) || 0; 
+                                setRecipeRows(newRows); 
+                              }} 
+                              className="w-full bg-transparent p-1 text-[10px] sm:text-xs text-right outline-none font-mono" 
+                            />
+                            {/* THIS LINE SHOWS THE UNIT DYNAMICALLY */}
+                            <span className="text-[9px] text-stone-400 font-bold uppercase">{mat?.unit || 'qty'}</span>
                           </div>
                         </div>
                         <button type="button" onClick={() => setRecipeRows(recipeRows.filter((_, i) => i !== index))} className="text-rose-300 hover:text-rose-500 ml-1"><MinusCircle size={16}/></button>
                       </div>
                     );
                   })}
-                  <button type="button" onClick={() => setRecipeRows([...recipeRows, { material_id: '', quantity_used: 1 }])} className="text-[10px] font-bold text-[#c2b280] hover:text-[#7a967a] tracking-widest uppercase">+ Add Ingredient</button>
+                  <button type="button" onClick={() => setRecipeRows([...recipeRows, { material_id: '', quantity_used: 1 }])} className="text-[10px] font-bold text-[#c2b280] hover:text-[#7a967a] tracking-widest uppercase transition-all">+ Add Ingredient</button>
                </div>
             )}
           </div>
 
-          <button type="submit" className="w-full bg-[#f1e6d2] text-[#637a63] py-4 sm:py-5 rounded-[2rem] font-black uppercase tracking-widest shadow-md text-xs sm:text-sm">
+          <button type="submit" className="w-full bg-[#f1e6d2] text-[#637a63] py-4 sm:py-5 rounded-[2rem] font-black uppercase tracking-widest shadow-md text-xs sm:text-sm hover:bg-[#e7d9c1] transition-all active:scale-[0.98]">
             {editingId ? 'Update Ledger' : 'Save to Ledger'}
           </button>
         </form>
